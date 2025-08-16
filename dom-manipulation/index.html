@@ -17,8 +17,27 @@
       <button id="newQuote">Show Random Quote</button>
     </div>
     
-    <div id="quoteDisplay" class="quote-container"></div>    
+    <div id="quoteDisplay" class="quote-container"></div>
     
+    <div class="add-quote-form">
+      <h2>Add New Quote</h2>
+      <div class="form-group">
+        <input id="newQuoteText" type="text" placeholder="Enter quote text" required>
+      </div>
+      <div class="form-group">
+        <input id="newQuoteAuthor" type="text" placeholder="Enter author (optional)">
+      </div>
+      <div class="form-group">
+        <input id="newQuoteCategory" type="text" placeholder="Enter category" required>
+      </div>
+      <button id="addQuoteBtn">Add Quote</button>
+    </div>
+
+    <div class="import-export-controls">
+      <button id="exportBtn">Export Quotes</button>
+      <label for="importFile" class="import-label">Import Quotes</label>
+      <input type="file" id="importFile" accept=".json">
+    </div>
   </div>
 
   <script src="script.js"></script>
