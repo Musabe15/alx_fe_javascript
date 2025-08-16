@@ -1,5 +1,5 @@
-// Enhanced quotes database with multiple categories
-let quotes = [
+// Initial quotes database
+const quotes = [
   {
     text: "The only way to do great work is to love what you do.",
     author: "Steve Jobs",
@@ -9,16 +9,6 @@ let quotes = [
     text: "Life is what happens when you're busy making other plans.",
     author: "John Lennon",
     category: "life"
-  },
-  {
-    text: "In the middle of every difficulty lies opportunity.",
-    author: "Albert Einstein",
-    category: "inspiration"
-  },
-  {
-    text: "The future belongs to those who believe in the beauty of their dreams.",
-    author: "Eleanor Roosevelt",
-    category: "dreams"
   }
 ];
 
@@ -26,31 +16,80 @@ let quotes = [
 const elements = {
   quoteDisplay: document.getElementById('quoteDisplay'),
   newQuoteBtn: document.getElementById('newQuote'),
-  categoryFilter: document.getElementById('categoryFilter'),
-  addQuoteBtn: document.getElementById('addQuoteBtn'),
-  newQuoteText: document.getElementById('newQuoteText'),
-  newQuoteAuthor: document.getElementById('newQuoteAuthor'),
-  newQuoteCategory: document.getElementById('newQuoteCategory')
+  categoryFilter: document.getElementById('categoryFilter')
 };
 
 // Initialize application
 function init() {
   showRandomQuote();
   updateCategoryFilter();
+  createAddQuoteForm(); // Creates the form dynamically
   setupEventListeners();
 }
 
-// Set up all event listeners
+// Create the "Add Quote" form dynamically
+function createAddQuoteForm() {
+  const formContainer = document.createElement('div');
+  formContainer.className = 'add-quote-form';
+  
+  const formTitle = document.createElement('h2');
+  formTitle.textContent = 'Add New Quote';
+  
+  // Create form groups
+  const textGroup = createInputGroup('newQuoteText', 'Enter quote text', true);
+  const authorGroup = createInputGroup('newQuoteAuthor', 'Enter author (optional)');
+  const categoryGroup = createInputGroup('newQuoteCategory', 'Enter category', true);
+  
+  // Create submit button
+  const submitBtn = document.createElement('button');
+  submitBtn.id = 'addQuoteBtn';
+  submitBtn.textContent = 'Add Quote';
+  
+  // Append all elements
+  formContainer.append(
+    formTitle,
+    textGroup,
+    authorGroup,
+    categoryGroup,
+    submitBtn
+  );
+  
+  // Add to DOM
+  document.querySelector('.container').appendChild(formContainer);
+  
+  // Cache the new elements
+  elements.newQuoteText = document.getElementById('newQuoteText');
+  elements.newQuoteAuthor = document.getElementById('newQuoteAuthor');
+  elements.newQuoteCategory = document.getElementById('newQuoteCategory');
+  elements.addQuoteBtn = document.getElementById('addQuoteBtn');
+}
+
+// Helper function to create input groups
+function createInputGroup(id, placeholder, required = false) {
+  const group = document.createElement('div');
+  group.className = 'form-group';
+  
+  const input = document.createElement('input');
+  input.id = id;
+  input.type = 'text';
+  input.placeholder = placeholder;
+  if (required) input.required = true;
+  
+  group.appendChild(input);
+  return group;
+}
+
+// Set up event listeners
 function setupEventListeners() {
   elements.newQuoteBtn.addEventListener('click', showRandomQuote);
   elements.categoryFilter.addEventListener('change', showRandomQuote);
   elements.addQuoteBtn.addEventListener('click', addQuote);
 }
 
-// Display random quote (filtered by category if selected)
+// Display random quote
 function showRandomQuote() {
   const selectedCategory = elements.categoryFilter.value;
-  let filteredQuotes = selectedCategory === 'all' 
+  const filteredQuotes = selectedCategory === 'all' 
     ? quotes 
     : quotes.filter(quote => quote.category === selectedCategory);
 
@@ -59,11 +98,11 @@ function showRandomQuote() {
     return;
   }
 
-  const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
-  displayQuote(randomQuote);
+  const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
+  displayQuote(filteredQuotes[randomIndex]);
 }
 
-// Render quote to DOM
+// Display specific quote
 function displayQuote(quote) {
   elements.quoteDisplay.innerHTML = `
     <p class="quote-text">"${quote.text}"</p>
@@ -72,7 +111,7 @@ function displayQuote(quote) {
   `;
 }
 
-// Update category dropdown options
+// Update category filter dropdown
 function updateCategoryFilter() {
   const categories = ['all', ...new Set(quotes.map(quote => quote.category))];
   elements.categoryFilter.innerHTML = categories.map(category => 
@@ -103,7 +142,7 @@ function addQuote() {
   alert('Quote added successfully!');
 }
 
-// Clear input fields
+// Clear form inputs
 function clearForm() {
   elements.newQuoteText.value = '';
   elements.newQuoteAuthor.value = '';
