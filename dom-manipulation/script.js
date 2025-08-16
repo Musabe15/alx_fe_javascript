@@ -1,5 +1,5 @@
-// Initial quotes database
-const quotes = [
+// Initialize quotes from localStorage or use default
+let quotes = JSON.parse(localStorage.getItem('quotes')) || [
   {
     text: "The only way to do great work is to love what you do.",
     author: "Steve Jobs",
@@ -16,15 +16,27 @@ const quotes = [
 const elements = {
   quoteDisplay: document.getElementById('quoteDisplay'),
   newQuoteBtn: document.getElementById('newQuote'),
-  categoryFilter: document.getElementById('categoryFilter')
+  categoryFilter: document.getElementById('categoryFilter'),
+  container: document.querySelector('.container')
 };
 
 // Initialize application
 function init() {
   showRandomQuote();
   updateCategoryFilter();
-  createAddQuoteForm(); // Creates the form dynamically
+  createAddQuoteForm();
+  createImportExportControls();
   setupEventListeners();
+  
+  // Store last viewed quote in session storage
+  if (quotes.length > 0) {
+    sessionStorage.setItem('lastViewedQuote', JSON.stringify(quotes[0]));
+  }
+}
+
+// Save quotes to localStorage
+function saveQuotes() {
+  localStorage.setItem('quotes', JSON.stringify(quotes));
 }
 
 // Create the "Add Quote" form dynamically
@@ -55,13 +67,42 @@ function createAddQuoteForm() {
   );
   
   // Add to DOM
-  document.querySelector('.container').appendChild(formContainer);
+  elements.container.appendChild(formContainer);
   
   // Cache the new elements
   elements.newQuoteText = document.getElementById('newQuoteText');
   elements.newQuoteAuthor = document.getElementById('newQuoteAuthor');
   elements.newQuoteCategory = document.getElementById('newQuoteCategory');
   elements.addQuoteBtn = document.getElementById('addQuoteBtn');
+}
+
+// Create import/export controls
+function createImportExportControls() {
+  const controlsDiv = document.createElement('div');
+  controlsDiv.className = 'import-export-controls';
+  
+  // Export button
+  const exportBtn = document.createElement('button');
+  exportBtn.id = 'exportBtn';
+  exportBtn.textContent = 'Export Quotes';
+  
+  // Import file input
+  const importLabel = document.createElement('label');
+  importLabel.htmlFor = 'importFile';
+  importLabel.textContent = 'Import Quotes';
+  importLabel.className = 'import-label';
+  
+  const importInput = document.createElement('input');
+  importInput.type = 'file';
+  importInput.id = 'importFile';
+  importInput.accept = '.json';
+  
+  controlsDiv.append(exportBtn, importLabel, importInput);
+  elements.container.appendChild(controlsDiv);
+  
+  // Cache elements
+  elements.exportBtn = exportBtn;
+  elements.importFile = importInput;
 }
 
 // Helper function to create input groups
@@ -84,6 +125,8 @@ function setupEventListeners() {
   elements.newQuoteBtn.addEventListener('click', showRandomQuote);
   elements.categoryFilter.addEventListener('change', showRandomQuote);
   elements.addQuoteBtn.addEventListener('click', addQuote);
+  elements.exportBtn.addEventListener('click', exportToJson);
+  elements.importFile.addEventListener('change', importFromJsonFile);
 }
 
 // Display random quote
@@ -99,7 +142,11 @@ function showRandomQuote() {
   }
 
   const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
-  displayQuote(filteredQuotes[randomIndex]);
+  const quote = filteredQuotes[randomIndex];
+  displayQuote(quote);
+  
+  // Store last viewed quote in session storage
+  sessionStorage.setItem('lastViewedQuote', JSON.stringify(quote));
 }
 
 // Display specific quote
@@ -134,6 +181,7 @@ function addQuote() {
 
   const newQuote = { text, category, ...(author && { author }) };
   quotes.push(newQuote);
+  saveQuotes();
   
   updateCategoryFilter();
   displayQuote(newQuote);
@@ -147,6 +195,58 @@ function clearForm() {
   elements.newQuoteText.value = '';
   elements.newQuoteAuthor.value = '';
   elements.newQuoteCategory.value = '';
+}
+
+// Export quotes to JSON file
+function exportToJson() {
+  if (quotes.length === 0) {
+    alert('No quotes to export');
+    return;
+  }
+  
+  const dataStr = JSON.stringify(quotes, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'quotes-export.json';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Import quotes from JSON file
+function importFromJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const fileReader = new FileReader();
+  
+  fileReader.onload = function(e) {
+    try {
+      const importedQuotes = JSON.parse(e.target.result);
+      
+      if (!Array.isArray(importedQuotes)) {
+        throw new Error('Invalid format: Expected an array of quotes');
+      }
+      
+      quotes.push(...importedQuotes);
+      saveQuotes();
+      updateCategoryFilter();
+      event.target.value = ''; // Reset file input
+      alert(`Successfully imported ${importedQuotes.length} quotes!`);
+    } catch (error) {
+      alert(`Error importing quotes: ${error.message}`);
+    }
+  };
+  
+  fileReader.onerror = () => {
+    alert('Error reading file');
+  };
+  
+  fileReader.readAsText(file);
 }
 
 // Initialize when DOM is ready
