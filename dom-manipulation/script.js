@@ -1,5 +1,8 @@
 // Initial quotes data
 let quotes = [];
+let serverQuotes = [];
+let lastSyncTime = null;
+let isSyncing = false;
 
 // DOM elements
 const quoteDisplay = document.getElementById('quoteDisplay');
@@ -8,17 +11,30 @@ const categoryFilter = document.getElementById('categoryFilter');
 const addQuoteContainer = document.getElementById('addQuoteContainer');
 const exportBtn = document.getElementById('exportBtn');
 const importFile = document.getElementById('importFile');
+const manualSyncBtn = document.getElementById('manualSyncBtn');
+const syncStatus = document.getElementById('syncStatus');
+const conflictModal = document.getElementById('conflictModal');
+const useServerDataBtn = document.getElementById('useServerData');
+const useLocalDataBtn = document.getElementById('useLocalData');
+const mergeDataBtn = document.getElementById('mergeData');
 
 // Storage keys
 const STORAGE_KEYS = {
     QUOTES: 'quotes',
     LAST_VIEWED: 'lastViewedQuote',
-    SELECTED_CATEGORY: 'selectedCategory'
+    SELECTED_CATEGORY: 'selectedCategory',
+    LAST_SYNC: 'lastSyncTime',
+    SERVER_QUOTES: 'serverQuotes'
 };
+
+// Server simulation (using localStorage as a mock server)
+const SERVER_DELAY = 1500; // Simulate network delay
+const SYNC_INTERVAL = 30000; // Sync every 30 seconds
 
 // Save quotes to local storage
 function saveQuotes() {
     localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
+    localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
 }
 
 // Load quotes from local storage
@@ -37,6 +53,20 @@ function loadQuotes() {
         ];
         saveQuotes();
     }
+    
+    // Load server quotes from storage (simulated)
+    const storedServerQuotes = localStorage.getItem(STORAGE_KEYS.SERVER_QUOTES);
+    if (storedServerQuotes) {
+        serverQuotes = JSON.parse(storedServerQuotes);
+    } else {
+        // Initialize server quotes with the same data
+        serverQuotes = JSON.parse(JSON.stringify(quotes));
+        localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(serverQuotes));
+    }
+    
+    // Load last sync time
+    const storedSyncTime = localStorage.getItem(STORAGE_KEYS.LAST_SYNC);
+    lastSyncTime = storedSyncTime ? new Date(storedSyncTime) : new Date();
 }
 
 // Save last viewed quote to session storage
@@ -180,7 +210,7 @@ function addQuote() {
     
     // Validate inputs
     if (!text || !category) {
-        alert('Please enter both quote text and category');
+        showNotification('Please enter both quote text and category', 'error');
         return;
     }
     
@@ -201,7 +231,10 @@ function addQuote() {
     categoryInput.value = '';
     
     // Show success message
-    alert('Quote added successfully!');
+    showNotification('Quote added successfully!', 'success');
+    
+    // Trigger sync with server
+    syncWithServer();
 }
 
 // Export quotes to JSON file using Blob
@@ -262,9 +295,12 @@ function importFromJsonFile(event) {
             // Reset file input
             event.target.value = '';
             
-            alert('Quotes imported successfully!');
+            showNotification('Quotes imported successfully!', 'success');
+            
+            // Trigger sync with server
+            syncWithServer();
         } catch (error) {
-            alert('Error importing quotes: ' + error.message);
+            showNotification('Error importing quotes: ' + error.message, 'error');
             console.error('Import error:', error);
         }
     };
@@ -280,6 +316,159 @@ function displayLastViewedQuote() {
             <span class="quote-category">${lastQuote.category}</span>
             <p class="last-viewed-note">(Last viewed quote)</p>
         `;
+    }
+}
+
+// Show notification to user
+function showNotification(message, type = 'success') {
+    // Create notification element if it doesn't exist
+    let notification = document.querySelector('.notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.className = 'notification';
+        document.body.appendChild(notification);
+    }
+    
+    // Set notification content and style
+    notification.textContent = message;
+    notification.className = `notification ${type} show`;
+    
+    // Hide notification after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
+
+// Update sync status indicator
+function updateSyncStatus(status, message = '') {
+    syncStatus.textContent = status === 'synced' ? 'Synced' : 
+                            status === 'syncing' ? 'Syncing...' : 
+                            status === 'error' ? 'Sync Error' : status;
+    
+    syncStatus.className = 'sync-status';
+    if (status === 'syncing') syncStatus.classList.add('syncing');
+    if (status === 'error') syncStatus.classList.add('error');
+    
+    if (message) {
+        showNotification(message, status === 'error' ? 'error' : 'success');
+    }
+}
+
+// Simulate fetching data from server
+async function fetchFromServer() {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // Simulate server response with stored server quotes
+            const storedServerQuotes = localStorage.getItem(STORAGE_KEYS.SERVER_QUOTES);
+            resolve(storedServerQuotes ? JSON.parse(storedServerQuotes) : []);
+        }, SERVER_DELAY);
+    });
+}
+
+// Simulate posting data to server
+async function postToServer(data) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            try {
+                // Simulate server saving data
+                localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(data));
+                resolve({ success: true });
+            } catch (error) {
+                reject(error);
+            }
+        }, SERVER_DELAY);
+    });
+}
+
+// Check if data has conflicts
+function hasConflicts(localData, serverData) {
+    // Simple conflict detection - check if data is different
+    return JSON.stringify(localData) !== JSON.stringify(serverData);
+}
+
+// Show conflict resolution modal
+function showConflictModal() {
+    conflictModal.style.display = 'block';
+}
+
+// Hide conflict resolution modal
+function hideConflictModal() {
+    conflictModal.style.display = 'none';
+}
+
+// Resolve conflict by using server data
+function resolveWithServerData() {
+    quotes = JSON.parse(JSON.stringify(serverQuotes));
+    saveQuotes();
+    populateCategories();
+    hideConflictModal();
+    showNotification('Data updated from server', 'success');
+}
+
+// Resolve conflict by keeping local data
+function resolveWithLocalData() {
+    // Update server with local data
+    serverQuotes = JSON.parse(JSON.stringify(quotes));
+    localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(serverQuotes));
+    hideConflictModal();
+    showNotification('Local data preserved', 'success');
+}
+
+// Resolve conflict by merging data
+function resolveWithMerge() {
+    // Merge strategy: combine both arrays and remove duplicates
+    const mergedQuotes = [...quotes];
+    
+    serverQuotes.forEach(serverQuote => {
+        const exists = mergedQuotes.some(localQuote => 
+            localQuote.text === serverQuote.text && localQuote.category === serverQuote.category
+        );
+        
+        if (!exists) {
+            mergedQuotes.push(serverQuote);
+        }
+    });
+    
+    quotes = mergedQuotes;
+    serverQuotes = JSON.parse(JSON.stringify(mergedQuotes));
+    
+    saveQuotes();
+    localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(serverQuotes));
+    populateCategories();
+    hideConflictModal();
+    showNotification('Data merged successfully', 'success');
+}
+
+// Sync data with server
+async function syncWithServer() {
+    if (isSyncing) return;
+    
+    isSyncing = true;
+    updateSyncStatus('syncing');
+    
+    try {
+        // Fetch latest data from server
+        const serverData = await fetchFromServer();
+        serverQuotes = serverData;
+        
+        // Check for conflicts
+        if (hasConflicts(quotes, serverQuotes)) {
+            // Show conflict resolution UI
+            showConflictModal();
+            updateSyncStatus('error', 'Data conflict detected');
+        } else {
+            // No conflicts, update server with our data
+            await postToServer(quotes);
+            updateSyncStatus('synced', 'Data synced successfully');
+        }
+    } catch (error) {
+        console.error('Sync error:', error);
+        updateSyncStatus('error', 'Sync failed: ' + error.message);
+    } finally {
+        isSyncing = false;
+        
+        // Schedule next sync
+        setTimeout(syncWithServer, SYNC_INTERVAL);
     }
 }
 
@@ -302,6 +491,13 @@ function init() {
     categoryFilter.addEventListener('change', filterQuotes);
     exportBtn.addEventListener('click', exportToJson);
     importFile.addEventListener('change', importFromJsonFile);
+    manualSyncBtn.addEventListener('click', syncWithServer);
+    useServerDataBtn.addEventListener('click', resolveWithServerData);
+    useLocalDataBtn.addEventListener('click', resolveWithLocalData);
+    mergeDataBtn.addEventListener('click', resolveWithMerge);
+    
+    // Start periodic syncing
+    setTimeout(syncWithServer, SYNC_INTERVAL);
 }
 
 // Start the application when DOM is loaded

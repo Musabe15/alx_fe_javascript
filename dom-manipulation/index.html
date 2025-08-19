@@ -10,6 +10,7 @@
     <div class="container">
         <header>
             <h1>Dynamic Quote Generator</h1>
+            <div id="syncStatus" class="sync-status">Synced</div>
         </header>
         
         <main>
@@ -35,10 +36,24 @@
                         <label for="importFile" class="import-label">Import Quotes from JSON:</label>
                         <input type="file" id="importFile" accept=".json" />
                     </div>
+                    <button id="manualSyncBtn">Manual Sync</button>
                 </div>
             </div>
             
             <div id="addQuoteContainer"></div>
+            
+            <!-- Conflict Resolution Modal -->
+            <div id="conflictModal" class="modal">
+                <div class="modal-content">
+                    <h2>Data Conflict Detected</h2>
+                    <p>Your local data differs from the server. How would you like to resolve this?</p>
+                    <div class="conflict-options">
+                        <button id="useServerData">Use Server Data</button>
+                        <button id="useLocalData">Keep Local Data</button>
+                        <button id="mergeData">Merge Data</button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     
