@@ -351,7 +351,7 @@ function updateSyncStatus(status, message = '') {
     if (status === 'error') syncStatus.classList.add('error');
     
     if (message) {
-        showNotification(message, status === 'error' ? 'error' : 'success');
+        showNotification(message, status === 'error' : 'error' : 'success');
     }
 }
 
@@ -472,8 +472,8 @@ function resolveWithMerge() {
     showNotification('Data merged successfully', 'success');
 }
 
-// Sync data with server
-async function syncWithServer() {
+// Sync quotes between local and server data
+async function syncQuotes() {
     if (isSyncing) return;
     
     isSyncing = true;
@@ -501,8 +501,13 @@ async function syncWithServer() {
         isSyncing = false;
         
         // Schedule next sync
-        setTimeout(syncWithServer, SYNC_INTERVAL);
+        setTimeout(syncQuotes, SYNC_INTERVAL);
     }
+}
+
+// Sync data with server (alias for syncQuotes)
+async function syncWithServer() {
+    await syncQuotes();
 }
 
 // Initialize the application
@@ -524,13 +529,13 @@ function init() {
     categoryFilter.addEventListener('change', filterQuotes);
     exportBtn.addEventListener('click', exportToJson);
     importFile.addEventListener('change', importFromJsonFile);
-    manualSyncBtn.addEventListener('click', syncWithServer);
+    manualSyncBtn.addEventListener('click', syncQuotes);
     useServerDataBtn.addEventListener('click', resolveWithServerData);
     useLocalDataBtn.addEventListener('click', resolveWithLocalData);
     mergeDataBtn.addEventListener('click', resolveWithMerge);
     
     // Start periodic syncing
-    setTimeout(syncWithServer, SYNC_INTERVAL);
+    setTimeout(syncQuotes, SYNC_INTERVAL);
 }
 
 // Start the application when DOM is loaded
