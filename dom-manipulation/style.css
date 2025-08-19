@@ -103,6 +103,7 @@ button:hover {
 .add-quote-section {
     border-top: 1px solid #eee;
     padding-top: 30px;
+    margin-top: 20px;
 }
 
 .add-quote-section h2 {
@@ -122,14 +123,14 @@ input[type="text"] {
     font-size: 16px;
 }
 
-#addQuoteBtn {
+.add-quote-btn {
     width: 100%;
     padding: 12px;
     font-size: 16px;
     background-color: #2ecc71;
 }
 
-#addQuoteBtn:hover {
+.add-quote-btn:hover {
     background-color: #27ae60;
 }
 
