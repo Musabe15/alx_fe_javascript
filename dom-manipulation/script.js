@@ -3,6 +3,7 @@ let quotes = [];
 let serverQuotes = [];
 let lastSyncTime = null;
 let isSyncing = false;
+let syncIntervalId = null;
 
 // DOM elements
 const quoteDisplay = document.getElementById('quoteDisplay');
@@ -351,7 +352,7 @@ function updateSyncStatus(status, message = '') {
     if (status === 'error') syncStatus.classList.add('error');
     
     if (message) {
-        showNotification(message, status === 'error' : 'error' : 'success');
+        showNotification(message, status === 'error' ? 'error' : 'success');
     }
 }
 
@@ -499,15 +500,23 @@ async function syncQuotes() {
         updateSyncStatus('error', 'Sync failed: ' + error.message);
     } finally {
         isSyncing = false;
-        
-        // Schedule next sync
-        setTimeout(syncQuotes, SYNC_INTERVAL);
     }
 }
 
 // Sync data with server (alias for syncQuotes)
 async function syncWithServer() {
     await syncQuotes();
+}
+
+// Start periodic syncing with setInterval
+function startPeriodicSync() {
+    // Clear any existing interval
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+    }
+    
+    // Start new interval for periodic syncing
+    syncIntervalId = setInterval(syncQuotes, SYNC_INTERVAL);
 }
 
 // Initialize the application
@@ -534,8 +543,8 @@ function init() {
     useLocalDataBtn.addEventListener('click', resolveWithLocalData);
     mergeDataBtn.addEventListener('click', resolveWithMerge);
     
-    // Start periodic syncing
-    setTimeout(syncQuotes, SYNC_INTERVAL);
+    // Start periodic syncing with setInterval
+    startPeriodicSync();
 }
 
 // Start the application when DOM is loaded
