@@ -378,21 +378,39 @@ async function fetchQuotesFromServer() {
     }
 }
 
-// Post quotes to JSONPlaceholder server (simulated as it's read-only)
+// Post quotes to JSONPlaceholder server with proper POST method and headers
 async function postToServer(data) {
-    // JSONPlaceholder is a read-only API, so we'll simulate posting
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            try {
-                // In a real application, we would send data to the server
-                // For this demo, we'll just store it locally
-                localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(data));
-                resolve({ success: true, message: 'Data synced with server (simulated)' });
-            } catch (error) {
-                reject(error);
-            }
-        }, SERVER_DELAY);
-    });
+    try {
+        // Make a POST request to JSONPlaceholder with proper headers
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        // JSONPlaceholder returns the created post with an ID, but we'll store locally too
+        localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(data));
+        
+        return { success: true, message: 'Data synced with server', data: result };
+    } catch (error) {
+        console.error('Error posting to server:', error);
+        
+        // Fallback to local storage if server request fails
+        try {
+            localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(data));
+            return { success: true, message: 'Data saved locally (server unavailable)' };
+        } catch (localError) {
+            throw new Error(`Failed to save data: ${localError.message}`);
+        }
+    }
 }
 
 // Check if data has conflicts
@@ -473,8 +491,8 @@ async function syncWithServer() {
             updateSyncStatus('error', 'Data conflict detected');
         } else {
             // No conflicts, update server with our data
-            await postToServer(quotes);
-            updateSyncStatus('synced', 'Data synced successfully');
+            const result = await postToServer(quotes);
+            updateSyncStatus('synced', result.message);
         }
     } catch (error) {
         console.error('Sync error:', error);
