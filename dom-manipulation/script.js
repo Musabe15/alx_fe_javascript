@@ -354,13 +354,18 @@ function updateSyncStatus(status, message = '') {
     }
 }
 
-// Simulate fetching data from server
-async function fetchFromServer() {
-    return new Promise((resolve) => {
+// Fetch quotes from server (simulated)
+async function fetchQuotesFromServer() {
+    return new Promise((resolve, reject) => {
         setTimeout(() => {
-            // Simulate server response with stored server quotes
-            const storedServerQuotes = localStorage.getItem(STORAGE_KEYS.SERVER_QUOTES);
-            resolve(storedServerQuotes ? JSON.parse(storedServerQuotes) : []);
+            try {
+                // Simulate server response with stored server quotes
+                const storedServerQuotes = localStorage.getItem(STORAGE_KEYS.SERVER_QUOTES);
+                const serverQuotes = storedServerQuotes ? JSON.parse(storedServerQuotes) : [];
+                resolve(serverQuotes);
+            } catch (error) {
+                reject(error);
+            }
         }, SERVER_DELAY);
     });
 }
@@ -448,7 +453,7 @@ async function syncWithServer() {
     
     try {
         // Fetch latest data from server
-        const serverData = await fetchFromServer();
+        const serverData = await fetchQuotesFromServer();
         serverQuotes = serverData;
         
         // Check for conflicts
