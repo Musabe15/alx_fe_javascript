@@ -183,6 +183,35 @@ input[type="text"] {
     font-style: italic;
 }
 
+.quotes-list {
+    margin-top: 20px;
+}
+
+.quote-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.quote-item:last-child {
+    border-bottom: none;
+}
+
+.quote-item-text {
+    font-size: 18px;
+    font-style: italic;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.quote-item-category {
+    font-size: 14px;
+    color: #7f8c8d;
+    background-color: #ecf0f1;
+    padding: 3px 10px;
+    border-radius: 15px;
+    display: inline-block;
+}
+
 @media (max-width: 600px) {
     .controls {
         flex-direction: column;
