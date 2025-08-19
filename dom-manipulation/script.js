@@ -358,8 +358,8 @@ function updateSyncStatus(status, message = '') {
 // Fetch quotes from JSONPlaceholder server
 async function fetchQuotesFromServer() {
     try {
-        // Fetch posts from JSONPlaceholder
-        const response = await fetch(`${SERVER_BASE_URL}/posts`);
+        // Fetch posts from JSONPlaceholder using the exact URL
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts');
         
         if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
