@@ -1,17 +1,53 @@
 // Initial quotes data
-let quotes = [
-    { text: "The only way to do great work is to love what you do.", category: "Inspiration" },
-    { text: "Life is what happens when you're busy making other plans.", category: "Life" },
-    { text: "In the middle of difficulty lies opportunity.", category: "Opportunity" },
-    { text: "The future belongs to those who believe in the beauty of their dreams.", category: "Dreams" },
-    { text: "Be the change that you wish to see in the world.", category: "Change" }
-];
+let quotes = [];
 
 // DOM elements
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteBtn = document.getElementById('newQuote');
 const categoryFilter = document.getElementById('categoryFilter');
 const addQuoteContainer = document.getElementById('addQuoteContainer');
+const exportBtn = document.getElementById('exportBtn');
+const importFile = document.getElementById('importFile');
+
+// Storage keys
+const STORAGE_KEYS = {
+    QUOTES: 'quotes',
+    LAST_VIEWED: 'lastViewedQuote'
+};
+
+// Save quotes to local storage
+function saveQuotes() {
+    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(quotes));
+}
+
+// Load quotes from local storage
+function loadQuotes() {
+    const storedQuotes = localStorage.getItem(STORAGE_KEYS.QUOTES);
+    if (storedQuotes) {
+        quotes = JSON.parse(storedQuotes);
+    } else {
+        // Default quotes if none in storage
+        quotes = [
+            { text: "The only way to do great work is to love what you do.", category: "Inspiration" },
+            { text: "Life is what happens when you're busy making other plans.", category: "Life" },
+            { text: "In the middle of difficulty lies opportunity.", category: "Opportunity" },
+            { text: "The future belongs to those who believe in the beauty of their dreams.", category: "Dreams" },
+            { text: "Be the change that you wish to see in the world.", category: "Change" }
+        ];
+        saveQuotes();
+    }
+}
+
+// Save last viewed quote to session storage
+function saveLastViewedQuote(quote) {
+    sessionStorage.setItem(STORAGE_KEYS.LAST_VIEWED, JSON.stringify(quote));
+}
+
+// Get last viewed quote from session storage
+function getLastViewedQuote() {
+    const lastQuote = sessionStorage.getItem(STORAGE_KEYS.LAST_VIEWED);
+    return lastQuote ? JSON.parse(lastQuote) : null;
+}
 
 // Initialize categories dropdown
 function initializeCategories() {
@@ -57,6 +93,9 @@ function showRandomQuote() {
         <p class="quote-text">"${randomQuote.text}"</p>
         <span class="quote-category">${randomQuote.category}</span>
     `;
+    
+    // Save to session storage
+    saveLastViewedQuote(randomQuote);
 }
 
 // Create the form to add new quotes
@@ -100,6 +139,9 @@ function addQuote() {
     // Add to quotes array
     quotes.push(newQuote);
     
+    // Save to local storage
+    saveQuotes();
+    
     // Update categories dropdown
     initializeCategories();
     
@@ -111,17 +153,93 @@ function addQuote() {
     alert('Quote added successfully!');
 }
 
+// Export quotes to JSON file
+function exportToJson() {
+    const dataStr = JSON.stringify(quotes, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = 'quotes.json';
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+}
+
+// Import quotes from JSON file
+function importFromJsonFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const fileReader = new FileReader();
+    fileReader.onload = function(event) {
+        try {
+            const importedQuotes = JSON.parse(event.target.result);
+            
+            // Validate the imported data
+            if (!Array.isArray(importedQuotes)) {
+                throw new Error('Imported data is not an array');
+            }
+            
+            // Check if each item has the required properties
+            for (const quote of importedQuotes) {
+                if (!quote.text || !quote.category) {
+                    throw new Error('Invalid quote format in imported file');
+                }
+            }
+            
+            // Add imported quotes to our array
+            quotes.push(...importedQuotes);
+            
+            // Save to local storage
+            saveQuotes();
+            
+            // Update categories dropdown
+            initializeCategories();
+            
+            // Reset file input
+            event.target.value = '';
+            
+            alert('Quotes imported successfully!');
+        } catch (error) {
+            alert('Error importing quotes: ' + error.message);
+            console.error('Import error:', error);
+        }
+    };
+    fileReader.readAsText(file);
+}
+
+// Display last viewed quote if available
+function displayLastViewedQuote() {
+    const lastQuote = getLastViewedQuote();
+    if (lastQuote) {
+        quoteDisplay.innerHTML = `
+            <p class="quote-text">"${lastQuote.text}"</p>
+            <span class="quote-category">${lastQuote.category}</span>
+            <p class="last-viewed-note">(Last viewed quote)</p>
+        `;
+    }
+}
+
 // Initialize the application
 function init() {
+    // Load quotes from local storage
+    loadQuotes();
+    
     // Initialize categories dropdown
     initializeCategories();
     
     // Create the add quote form
     createAddQuoteForm();
     
+    // Display last viewed quote if available
+    displayLastViewedQuote();
+    
     // Set up event listeners
     newQuoteBtn.addEventListener('click', showRandomQuote);
     categoryFilter.addEventListener('change', showRandomQuote);
+    exportBtn.addEventListener('click', exportToJson);
+    importFile.addEventListener('change', importFromJsonFile);
 }
 
 // Start the application when DOM is loaded
