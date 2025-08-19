@@ -176,6 +176,13 @@ input[type="text"] {
     background-color: #8e44ad;
 }
 
+.last-viewed-note {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-top: 10px;
+    font-style: italic;
+}
+
 @media (max-width: 600px) {
     .controls {
         flex-direction: column;

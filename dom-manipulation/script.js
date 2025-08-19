@@ -153,17 +153,28 @@ function addQuote() {
     alert('Quote added successfully!');
 }
 
-// Export quotes to JSON file
+// Export quotes to JSON file using Blob
 function exportToJson() {
     const dataStr = JSON.stringify(quotes, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = 'quotes.json';
+    // Create a Blob with the JSON data
+    const blob = new Blob([dataStr], { type: 'application/json' });
     
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    // Create a download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'quotes.json';
+    
+    // Trigger the download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 100);
 }
 
 // Import quotes from JSON file
