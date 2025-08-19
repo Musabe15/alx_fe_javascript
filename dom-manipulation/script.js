@@ -27,7 +27,8 @@ const STORAGE_KEYS = {
     SERVER_QUOTES: 'serverQuotes'
 };
 
-// Server simulation (using localStorage as a mock server)
+// Server configuration
+const SERVER_BASE_URL = 'https://jsonplaceholder.typicode.com';
 const SERVER_DELAY = 1500; // Simulate network delay
 const SYNC_INTERVAL = 30000; // Sync every 30 seconds
 
@@ -354,30 +355,39 @@ function updateSyncStatus(status, message = '') {
     }
 }
 
-// Fetch quotes from server (simulated)
+// Fetch quotes from JSONPlaceholder server
 async function fetchQuotesFromServer() {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            try {
-                // Simulate server response with stored server quotes
-                const storedServerQuotes = localStorage.getItem(STORAGE_KEYS.SERVER_QUOTES);
-                const serverQuotes = storedServerQuotes ? JSON.parse(storedServerQuotes) : [];
-                resolve(serverQuotes);
-            } catch (error) {
-                reject(error);
-            }
-        }, SERVER_DELAY);
-    });
+    try {
+        // Fetch posts from JSONPlaceholder
+        const response = await fetch(`${SERVER_BASE_URL}/posts`);
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const posts = await response.json();
+        
+        // Convert posts to our quote format (using first 10 posts for demo)
+        return posts.slice(0, 10).map(post => ({
+            text: post.title,
+            category: `Post ${post.id}`
+        }));
+    } catch (error) {
+        console.error('Error fetching from server:', error);
+        throw error;
+    }
 }
 
-// Simulate posting data to server
+// Post quotes to JSONPlaceholder server (simulated as it's read-only)
 async function postToServer(data) {
+    // JSONPlaceholder is a read-only API, so we'll simulate posting
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             try {
-                // Simulate server saving data
+                // In a real application, we would send data to the server
+                // For this demo, we'll just store it locally
                 localStorage.setItem(STORAGE_KEYS.SERVER_QUOTES, JSON.stringify(data));
-                resolve({ success: true });
+                resolve({ success: true, message: 'Data synced with server (simulated)' });
             } catch (error) {
                 reject(error);
             }
