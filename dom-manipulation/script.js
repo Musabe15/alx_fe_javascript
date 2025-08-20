@@ -494,6 +494,9 @@ async function syncQuotes() {
             // No conflicts, update server with our data
             const result = await postToServer(quotes);
             updateSyncStatus('synced', result.message);
+            
+            // Show alert notification
+            alert("Quotes synced with server!");
         }
     } catch (error) {
         console.error('Sync error:', error);
